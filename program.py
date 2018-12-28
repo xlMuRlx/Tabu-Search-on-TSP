@@ -12,21 +12,6 @@ povezave = {1:[[2,3], [3,2], [4,5]],
             8:[[6,1], [7,2]]
             }
 
-##povezave1 = [(1,2,3), (1,3,2), (1,4,5), (2,1,3), (2,3,3), (2,5,3), (3,1,2),
-##            (3,2,3), (3,4,2), (3,5,5), (3,6,3), (3,7,7), (4,1,5), (4,3,2),
-##            (4,6,6), (5,2,3), (5,3,5), (5,7,4), (6,3,3), (6,3,4), (6,8,1),
-##            (7,3,7), (7,5,4), (7,8,2), (8,6,1), (8,7,2)]
-##
-##a = float('inf')
-##povezave2 = [[0, 3, 2, 5, a, a, a, a],
-##             [3, 0, 3, a, 3, a, a, a],
-##             [2, 3, 0, 2, 5, 3, 7, a],
-##             [5, a, 2, 0, a, 6, a, a],
-##             [a, 3, 5, a, 0, a, 4, a],
-##             [a, a, 3, 6, a, 0, a, 1],
-##             [a, a, 7, a, 4, a, 0, 2],
-##             [a, a, a, a, a, 1, 2, 0]]
-
 
 
 def dolzina_poti(pot, povezave):
@@ -43,61 +28,81 @@ def dolzina_poti(pot, povezave):
     return dolzina
 
 
-def poisci_resitev_slabo(vozlisca, povezave):
-    zacetek = vozlisca.pop(0)
-    ostala = vozlisca
-    korak = 0
-    while True:
-        pot = [zacetek] + ostala + [zacetek]
-        if dolzina_poti(pot, povezave) != float('inf'):
-            print(korak)
-            return pot
-        random.shuffle(ostala)
-        korak += 1
-
-
 
 def poisci_resitev(vozlisca, povezave):
     zacetek = vozlisca[0]
-    neobiskana = vozlisca
     pot = [zacetek]
-    obiskana = []
-    korak = 0
+    vozlisce = zacetek
+    prepovedani = {}
+    for v in vozlisca:
+        prepovedani[v] = []
     while True:
-        novo_vozlisce = random.choice(povezave[zacetek])[0]
-        if novo_vozlisce not in obiskana:
+        sosedi = []
+        for sosed in povezave[vozlisce]:
+            if (sosed[0] not in pot) and (sosed[0] not in prepovedani[vozlisce]):
+                sosedi.append(sosed[0])
+        if sosedi == []:
+            pot.remove(vozlisce)
+            vozlisce = pot[-1]
+        else:
+            random.shuffle(sosedi)
+            novo_vozlisce = sosedi.pop(0)
             pot.append(novo_vozlisce)
-            obiskana.append(novo_vozlisce)
-            neobiskana.remove(novo_vozlisce)
-            zacetek = novo_vozlisce
-            if neobiskana == []:
-                if pot[0] == pot[-1]:
-                    if dolzina_poti(pot, povezave) != float('inf'):
-                        return pot
-                poisci_resitev(vozlisca, povezave)
-        korak += 1
-        if korak > 10000:
-            print('Napaka!')
-            break
+            if len(pot) == len(vozlisca):
+                koncni_sosedi = []
+                for sosed in povezave[vozlisce]:
+                    koncni_sosedi.append(sosed[0])
+                if zacetek in koncni_sosedi:
+                    pot.append(zacetek)
+                    return pot
+                else:
+                    pot.remove(vozlisce)
+                    prepovedani[vozlisce].append(novo_vozlisce)
+                    vozlisce = pot[-1]
+            else:
+                vozlisce = novo_vozlisce
                 
 
 
 def okolica_poti(pot, povezave):
-    n = len(pot)
-    okolica = []
-    nova_pot = pot
-    for i in range(1, n-2):
-        for j in range(2, n-2):
-            a = nova_pot[i]
-            nova_pot[i] = nova_pot[j]
-            nova_pot[j] = a
-            if dolzina_poti(nova_pot, povezave) != float('inf'):
-                print(nova_pot)
-                if nova_pot not in okolica:
-                    okolica.append(nova_pot)
-                    print(okolica)
-            nova_pot = pot
-    return okolica
+    sosedje = []
+    for vozlisce in pot:
+        for sosed in povezave.get(vozlisce):
+            if ((sosed[0] != vozlisca[0]) and (vozlisce != vozlisca[0])):
+                nova_pot = pot[:]
+                a, b = nova_pot.index(vozlisce), nova_pot.index(sosed[0])
+                nova_pot[a], nova_pot[b] = nova_pot[b], nova_pot[a]
+                if nova_pot not in sosedje:
+                    if dolzina_poti(nova_pot, povezave) != float('inf'):
+                        sosedje.append(nova_pot)
+                nova_pot = pot
+    return sosedje
+
+
+
+# Preveri še primer, če dobiš pot brez okolice!!!
+def tabu_search(vozlisca, povezave):
+    najboljsa = poisci_resitev(vozlisca, povezave)
+    pot = najboljsa[:]
+    tabu = []
+    koraki = 0
+    while koraki < 10000:
+        kandidati = okolica_poti(pot, povezave)
+        dolzina = float('inf')
+        for kandidat in kandidati:
+            if kandidat not in tabu:
+                if dolzina_poti(kandidat, povezave) < dolzina:
+                    dolzina = dolzina_poti(kandidat, povezave)
+                    nova_pot = kandidat[:]
+        if nova_pot not in tabu:
+            tabu.append(nova_pot)
+        if len(tabu) > 100:
+            tabu.pop(0)
+        if dolzina_poti(nova_pot, povezave) < dolzina_poti(najboljsa, povezave):
+            najboljsa = nova_pot[:]
+        pot = nova_pot[:]
+        koraki += 1
+    return najboljsa
 
 
 
