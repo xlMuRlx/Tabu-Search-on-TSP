@@ -15,6 +15,8 @@ povezave = {1:[[2,3], [3,2], [4,5]],
 
 
 def prevedba_koordinat(n, datoteka):
+    ''' Funkcija, ki dano datoteko prevede v matriko sosednosti za graf,
+    katerega datoteka predstavlja. '''
     kordinate = []
     for i in range(n):
         vrstica = []
@@ -40,6 +42,8 @@ def prevedba_koordinat(n, datoteka):
 
 
 def usmerjena_matrika_slovar(matrika):
+    ''' Funkcija za prevajanje matrike sosednosti na slovar sosedov za
+    usmerjene grafe. '''
     slovar = {}
     stevec1 = 1
     vozlisca = []
@@ -58,6 +62,8 @@ def usmerjena_matrika_slovar(matrika):
 
 
 def neusmerjena_matrika_slovar(matrika):
+    ''' Funkcija za prevajanje matrike sosednosti na slovar sosedov za
+    neusmerjene grafe. '''
     n = len(matrika)
     slovar = {}
     vozlisca = []
@@ -75,6 +81,8 @@ def neusmerjena_matrika_slovar(matrika):
 
 
 def dolzina_poti(pot, povezave):
+    ''' Izračun dolžine dane poti glede na dolžino med posameznimi
+    vozlišči, ki so dane s slovarjem povezave. '''
     dolzina = 0
     for i in range(0, len(pot)-1):
         vozlisce = pot[i]
@@ -90,12 +98,16 @@ def dolzina_poti(pot, povezave):
 
                 
 def poisci_resitev(vozlisca, povezave):
+    ''' Funkcija, katero uporabljamo za iskanje kakršnekoli rešitve
+    v našem grafu, ki je predstavljen s seznamom vozlisca in slovarjem
+    povezave. V njej uporabljamo stevec za ugotavljanje načina, kako
+    smo v neko vozlišče prišli; če ima števec vrednost 1, potem smo v
+    vozlišče prišli s korakom nazaj, sicer pa s korakom naprej. '''
     zacetek = vozlisca[0]
     pot = [zacetek]
     vozlisce = zacetek
     naslednji_koraki = []
-    stevec = 0 #gleda, kako smo do vozlišča prišli, t.j. bodisi z normalnim
-            #korakom naprej (stevec = 0) bodisi s korakom nazaj (stevec = 1)
+    stevec = 0
     while True:
         if stevec == 0:
             sosedi = []
@@ -133,6 +145,9 @@ def poisci_resitev(vozlisca, povezave):
 
 
 def okolica_poti(pot, povezave):
+    ''' Funkcija za dano pot glede na slovar povezave poišče seznam
+    poti v okolici, t.j. poti, ki jih iz dane dobimo tako, da dve
+    vozlišči med seboj zamenjamo. '''
     sosedje = []
     for vozlisce in pot:
         for sosed in povezave.get(vozlisce):
@@ -149,6 +164,10 @@ def okolica_poti(pot, povezave):
 
 
 def tabu_search(vozlisca, povezave):
+    ''' Končna funkcija, ki s pomočjo prej definiranih funkcij
+    za dan graf, predstavljen s seznamov vozlisca in slovarjem
+    povezave, s pomočjo metode Tabu Search poišče optimalno oz.
+    najkrajšo pot v njem. '''
     najboljsa = poisci_resitev(vozlisca, povezave)
     naj_dolzina = float('inf')
     pot = najboljsa[:]
