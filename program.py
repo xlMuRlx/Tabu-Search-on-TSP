@@ -42,6 +42,7 @@ def prevedba_koordinat(n, datoteka):
 def usmerjena_matrika_slovar(matrika):
     slovar = {}
     stevec1 = 1
+    vozlisca = []
     for vrstica in matrika:
         sosedi = []
         stevec2 = 1
@@ -50,8 +51,9 @@ def usmerjena_matrika_slovar(matrika):
                 sosedi.append([stevec2, sosed])
             stevec2 += 1
         slovar[stevec1] = sosedi
+        vozlisca.append(stevec1)
         stevec1 += 1
-    return slovar
+    return slovar, vozlisca
 
 
 
