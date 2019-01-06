@@ -1,42 +1,25 @@
 import random
 
-vozlisca = [1, 2, 3, 4, 5, 6, 7, 8]
-
-povezave = {1:[[2,3], [3,2], [4,5]],
-            2:[[1,3], [3,3], [5,3]],
-            3:[[1,2], [2,3], [4,2], [5,5], [6,3], [7,7]],
-            4:[[1,5], [3,2], [6,6]],
-            5:[[2,3], [3,5], [7,4]],
-            6:[[3,3], [4,3], [8,1]],
-            7:[[3,7], [5,4], [8,2]],
-            8:[[6,1], [7,2]]
-            }
 
 
-
-def prevedba_koordinat(n, datoteka):
+def prevedba_koordinat(datoteka):
     ''' Funkcija, ki dano datoteko prevede v matriko sosednosti za graf,
     katerega datoteka predstavlja. '''
-    kordinate = []
-    for i in range(n):
-        vrstica = []
-        for j in range(n):
-            vrstica.append(0)
-        kordinate.append(vrstica)
-    f = open(datoteka, "r")
-    for i in range(n):
-        kordinate[i] = f.readline().split()
-        for j in range(3):
-            kordinate[i][j] = float(kordinate[i][j])
+    koordinate = []
+    with open (datoteka) as file:
+        for vrstica in file:
+            koordinate.append(vrstica.split())
+    n = len(koordinate)
     matrika_sosednosti = []
-    for i in range(n):
-        vrstica = []
-        for j in range(n):
-            vrstica.append(0)
-        matrika_sosednosti.append(vrstica)
-    for i in range(n):
-        for j in range(n):
-            matrika_sosednosti[i][j] = (abs(kordinate[i][1]-kordinate[j][1])**2 + abs(kordinate[i][2] - kordinate[j][2])**2)**(1/2)
+    for i in range(0, n):
+        matrika_sosednosti.append(n*[float('inf')])
+    for i in range(0, n):
+        for j in range(i, n):
+            prvi_kraj = (float(koordinate[i][1]), float(koordinate[i][2]))
+            drugi_kraj = (float(koordinate[j][1]), float(koordinate[j][2]))
+            razdalja = ((drugi_kraj[0] - prvi_kraj[0])**2 + (drugi_kraj[1] - prvi_kraj[1])**2)**(1/2)
+            matrika_sosednosti[i][j] = razdalja
+            matrika_sosednosti[j][i] = razdalja
     return matrika_sosednosti
 
 
@@ -67,11 +50,11 @@ def neusmerjena_matrika_slovar(matrika):
     n = len(matrika)
     slovar = {}
     vozlisca = []
-    for i in range(0, n-1):
+    for i in range(0, n):
         slovar[i] = []
         vozlisca.append(i)
-    for i in range(0, n-1):
-        for j in range(i, n-1):
+    for i in range(0, n):
+        for j in range(i, n):
             dolzina = matrika[i][j]
             if (dolzina != 0) and (dolzina != float('inf')):
                 slovar[i].append([j, dolzina])
@@ -144,71 +127,108 @@ def poisci_resitev(vozlisca, povezave):
 
 
 
-def okolica_poti(pot, povezave):
+def okolica_poti(vozlisca, pot, povezave):
     ''' Funkcija za dano pot glede na slovar povezave poišče seznam
     poti v okolici, t.j. poti, ki jih iz dane dobimo tako, da dve
     vozlišči med seboj zamenjamo. '''
-    sosedje = []
-    for vozlisce in pot:
-        for sosed in povezave.get(vozlisce):
-            if ((sosed[0] != vozlisca[0]) and (vozlisce != vozlisca[0])):
+    n = len(pot)
+    okolica = []
+    sosedi = {}
+    for i in vozlisca:
+        sosedi[i] = []
+        for sosed in povezave[i]:
+            sosedi[i].append(sosed[0])
+    for i in range(0, n-3):
+        for j in range(i+3, n):
+            if (pot[i] in sosedi[pot[j-1]]) and (pot[i+1] in sosedi[pot[j]]):
                 nova_pot = pot[:]
-                a, b = nova_pot.index(vozlisce), nova_pot.index(sosed[0])
-                nova_pot[a], nova_pot[b] = nova_pot[b], nova_pot[a]
-                if nova_pot not in sosedje:
-                    if dolzina_poti(nova_pot, povezave) != float('inf'):
-                        sosedje.append(nova_pot)
-                nova_pot = pot
-    return sosedje
+                nova_pot[i+1:j] = nova_pot[i+1:j][::-1]
+                if nova_pot != pot:
+                    okolica.append(nova_pot)
+    return okolica
 
 
 
-def tabu_search(vozlisca, povezave):
+def tabu_search(vozlisca, povezave, max_koraki = 100, max_tabu = 50, izpis = 25):
     ''' Končna funkcija, ki s pomočjo prej definiranih funkcij
     za dan graf, predstavljen s seznamov vozlisca in slovarjem
     povezave, s pomočjo metode Tabu Search poišče optimalno oz.
-    najkrajšo pot v njem. '''
+    najkrajšo pot v njem. S parametrom max_koraki se določa število
+    opravljenih korakov, z max_tabu maksimalno dolžino tabu seznama,
+    s številom izpis pa na koliko korakov nam izpiše dolžino poti. '''
     najboljsa = poisci_resitev(vozlisca, povezave)
     naj_dolzina = float('inf')
     pot = najboljsa[:]
     tabu = []
     koraki = 0
-    while koraki < 100:
+    while koraki < max_koraki:
         kandidati = []
-        for kandidat in okolica_poti(pot, povezave):
-            kandidati.append(kandidat)
-        razlika = []
-        for kandidat in kandidati:
+        for kandidat in okolica_poti(vozlisca, pot, povezave):
             if kandidat not in tabu:
-                razlika.append(kandidat)
-        if razlika == []:
+                kandidati.append(kandidat)
+        if kandidati == []:
             pot = poisci_resitev(vozlisca, povezave)
             koraki += 1
         else:
             dolzina = float('inf')
-            for kandidat in razlika:
-                if dolzina_poti(kandidat, povezave) < dolzina:
-                    dolzina = dolzina_poti(kandidat, povezave)
+            for kandidat in kandidati:
+                nova_dolzina = dolzina_poti(kandidat, povezave)
+                if nova_dolzina < dolzina:
+                    dolzina = nova_dolzina
                     nova_pot = kandidat[:]
             tabu.append(nova_pot)
-            if len(tabu) > 50:
+            if len(tabu) > max_tabu:
                 tabu.pop(0)
-            nova_dolzina = dolzina_poti(nova_pot, povezave)
-            if nova_dolzina < naj_dolzina:
+            if dolzina < naj_dolzina:
                 najboljsa = nova_pot[:]
-                naj_dolzina = nova_dolzina
+                naj_dolzina = dolzina
             pot = nova_pot[:]
+            if koraki % izpis == 0:
+                print(naj_dolzina, ', Koraki =', koraki)
             koraki += 1
     return (najboljsa, naj_dolzina)
 
 
 
+################################################################################
+# Definiranje funkcij, ki poženejo eno izmed priloženih datotek.               #
+################################################################################
 
 
+# Primer za graf, katerega sliko si lahko ogledate v kratki predstavitvi
+def osnovni_primer():
+    vozlisca = [1, 2, 3, 4, 5, 6, 7, 8]
+    povezave = {1:[[2,3], [3,2], [4,5]],
+                2:[[1,3], [3,3], [5,3]],
+                3:[[1,2], [2,3], [4,2], [5,5], [6,3], [7,7]],
+                4:[[1,5], [3,2], [6,6]],
+                5:[[2,3], [3,5], [7,4]],
+                6:[[3,3], [4,6], [8,1]],
+                7:[[3,7], [5,4], [8,2]],
+                8:[[6,1], [7,2]]
+                }
+    print(tabu_search(vozlisca, povezave, 20, 10))
 
 
+# Primer za Bavarsko velikosti 29
+def bavarska():
+    matrika = prevedba_koordinat('bavarska.txt')
+    povezave, vozlisca = neusmerjena_matrika_slovar(matrika)
+    print(tabu_search(vozlisca, povezave, 150, 50))
 
 
+# Primer za Eilon velikosti 51
+def eilon():
+    matrika = prevedba_koordinat('eilon.txt')
+    povezave, vozlisca = neusmerjena_matrika_slovar(matrika)
+    print(tabu_search(vozlisca, povezave, 150, 50))
+
+    
+# Primer za Eilon velikosti 101
+def eilon_101():
+    matrika = prevedba_koordinat('eilon_101.txt')
+    povezave, vozlisca = neusmerjena_matrika_slovar(matrika)
+    print(tabu_search(vozlisca, povezave, 200, 100))
 
 
 
